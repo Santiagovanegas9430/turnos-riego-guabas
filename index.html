@@ -72,7 +72,7 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:10px 0 30px}
     <div id="res" style="margin-top:14px"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="panelQ" hidden>
     <h2>💧 Registrar caudal del río (administrador / stakeholder)</h2>
     <div class="row">
       <div style="flex:1;min-width:180px"><label for="qin">Caudal medido (l/s)</label><input id="qin" type="number" min="0" step="any" placeholder="Ej.: 2100"></div>
@@ -254,7 +254,6 @@ async function leerSheet(){
 }
 (async()=>{
   if(D.gsheet){
-    $("modoNota").innerHTML="El caudal oficial se publica en la planilla de seguimiento; aquí puede simular otros valores (solo en su pantalla).";
     try{await leerSheet(); setInterval(()=>leerSheet().catch(()=>{}),300000);}
     catch(e){$("estDet").textContent="No se pudo leer el caudal oficial. Intente recargar la página.";}
     return;
@@ -262,7 +261,8 @@ async function leerSheet(){
   let user=null;
   try{ db=window.claude?await claude.use("db"):null; user=window.claude?await claude.use("user"):null; }catch(e){db=null}
   puede=!!(user&&(user.canEdit()||user.isOwner()));
-  if(!db){$("modoNota").textContent="Modo local: el caudal digitado calcula la condición solo en este equipo.";return;}
+  if(!db) return;
+  $("panelQ").hidden=!puede;
   $("modoNota").textContent=puede?"Usted puede publicar el caudal: al calcular, la condición se actualiza para todos los usuarios.":"Solo los administradores publican el caudal oficial; usted puede simular uno localmente.";
   const t=setTimeout(()=>{},10000);
   db.doc("estado/actual").onSnapshot(s=>{clearTimeout(t); const v=s&&(s.data?s.data():s); if(v&&v.q!=null){estado={cond:clasificar(v.q),q:v.q,fecha:v.fecha}; pintarEstado();}},()=>clearTimeout(t));
