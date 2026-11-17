@@ -72,16 +72,19 @@ footer{text-align:center;font-size:.75rem;color:var(--mut);padding:10px 0 30px}
     <div id="res" style="margin-top:14px"></div>
   </section>
 
-  <section class="card" id="panelQ" hidden>
-    <h2>💧 Registrar caudal del río (administrador / stakeholder)</h2>
-    <div class="row">
-      <div style="flex:1;min-width:180px"><label for="qin">Caudal medido (l/s)</label><input id="qin" type="number" min="0" step="any" placeholder="Ej.: 2100"></div>
-      <div style="flex:1;min-width:180px"><label for="fin">Fecha de la medición</label><input id="fin" type="date"></div>
-      <button id="btnQ">Calcular condición</button>
+  <section class="card" id="panelQ">
+    <h2>📊 Escenarios según el caudal del río (l/s)</h2>
+    <div class="umb" id="umb" style="margin-top:0"></div>
+    <div id="entradaQ" hidden style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+      <h2>💧 Registrar caudal (administrador)</h2>
+      <div class="row">
+        <div style="flex:1;min-width:180px"><label for="qin">Caudal medido (l/s)</label><input id="qin" type="number" min="0" step="any" placeholder="Ej.: 2100"></div>
+        <div style="flex:1;min-width:180px"><label for="fin">Fecha de la medición</label><input id="fin" type="date"></div>
+        <button id="btnQ">Calcular condición</button>
+      </div>
+      <div class="msg" id="qmsg"></div>
+      <p class="note" id="modoNota"></p>
     </div>
-    <div class="msg" id="qmsg"></div>
-    <div class="umb" id="umb"></div>
-    <p class="note" id="modoNota"></p>
   </section>
 </main>
 <footer id="foot"></footer>
@@ -108,8 +111,8 @@ function clasificar(q){
 const escDe=c=>c==="Emergencia"?"Crítico":c; // escenario de turnado que aplica
 function pintarUmbrales(){
   $("umb").innerHTML=ORD.filter(k=>D.umbrales[k]).map(k=>`<div class="${estado.cond===k?'on':''}">
-   <span class="pill" style="background:${COL[k]}">${k}</span><br>${D.umbrales[k][0].toLocaleString()} – ${D.umbrales[k][1].toLocaleString()} l/s</div>`).join("")
-   +`<div class="${estado.cond==='Emergencia'?'on':''}"><span class="pill" style="background:${COL.Emergencia}">Bajo crítico</span><br>&lt; ${Math.min(...Object.values(D.umbrales).map(v=>v[0])).toLocaleString()} l/s</div>`;
+   <span class="pill" style="background:${COL[k]}">${k}</span><br>${D.umbrales[k][0].toLocaleString("es-CO")} – ${D.umbrales[k][1].toLocaleString("es-CO")} l/s</div>`).join("")
+   +`<div class="${estado.cond==='Emergencia'?'on':''}"><span class="pill" style="background:${COL.Emergencia}">Bajo crítico</span><br>&lt; ${Math.min(...Object.values(D.umbrales).map(v=>v[0])).toLocaleString("es-CO")} l/s</div>`;
 }
 function pintarEstado(){
   const e=$("estado"),c=estado.cond;
@@ -119,7 +122,7 @@ function pintarEstado(){
   const txt={"Húmedo":"Oferta suficiente: riego sin turnado.","Medio":"Se aplica la programación de turnos en condición MEDIA.",
    "Severo":"Se aplica la programación de turnos en condición SEVERA.","Crítico":"Se aplica la programación de turnos en condición CRÍTICA.",
    "Emergencia":"Caudal inferior al mínimo del escenario crítico: se aplica el turnado crítico y se recomienda atender medidas de emergencia de la autoridad ambiental."}[c];
-  $("estDet").innerHTML=`Caudal: <b>${Number(estado.q).toLocaleString()} l/s</b>${estado.fecha?" · medido el "+fmt(parse(estado.fecha)):""}<br>${txt}`;
+  $("estDet").innerHTML=`Caudal: <b>${Number(estado.q).toLocaleString("es-CO")} l/s</b>${estado.fecha?" · medido el "+fmt(parse(estado.fecha)):""}<br>${txt}`;
   pintarUmbrales(); if(actual){tabSel=escDe(c)==="Húmedo"?tabSel:escDe(c); mostrar(actual);}
 }
 
@@ -262,7 +265,7 @@ async function leerSheet(){
   try{ db=window.claude?await claude.use("db"):null; user=window.claude?await claude.use("user"):null; }catch(e){db=null}
   puede=!!(user&&(user.canEdit()||user.isOwner()));
   if(!db) return;
-  $("panelQ").hidden=!puede;
+  $("entradaQ").hidden=!puede;
   $("modoNota").textContent=puede?"Usted puede publicar el caudal: al calcular, la condición se actualiza para todos los usuarios.":"Solo los administradores publican el caudal oficial; usted puede simular uno localmente.";
   const t=setTimeout(()=>{},10000);
   db.doc("estado/actual").onSnapshot(s=>{clearTimeout(t); const v=s&&(s.data?s.data():s); if(v&&v.q!=null){estado={cond:clasificar(v.q),q:v.q,fecha:v.fecha}; pintarEstado();}},()=>clearTimeout(t));
